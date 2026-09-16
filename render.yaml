@@ -1,12 +1,11 @@
-# Render Blueprint: deploy the full LumpyAI application from this repository.
-# The web service communicates with the ML service over Render's private network.
 services:
-  - type: pserv
+  - type: web
     name: lumpy-ai-ml
     runtime: docker
     region: singapore
-    plan: 1c-2g
+    plan: free
     dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
     healthCheckPath: /health
     envVars:
       - key: PORT
@@ -15,41 +14,3 @@ services:
         value: /app/models/best.pt
       - key: WORK_DIR
         value: /tmp/lumpy-ai
-
-  - type: web
-    name: lumpy-ai-web
-    runtime: node
-    region: singapore
-    plan: free
-    rootDir: frontend-web
-    buildCommand: npm ci && npm run build
-    startCommand: npm start
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_VERSION
-        value: "20"
-      - key: MONGODB_URI
-        sync: false
-      - key: MONGODB_DB_NAME
-        value: lumpydb
-      - key: SESSION_SECRET
-        generateValue: true
-      - key: ML_BACKEND_URL
-        fromService:
-          type: pserv
-          name: lumpy-ai-ml
-          property: hostport
-      - key: NEXT_PUBLIC_BASE_URL
-        sync: false
-      - key: EMAIL_HOST
-        sync: false
-      - key: EMAIL_PORT
-        value: "587"
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASS
-        sync: false
-      - key: EMAIL_FROM
-        sync: false
-      - key: FAST2SMS_API_KEY
-        sync: false

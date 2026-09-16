@@ -16,7 +16,7 @@ RESULT_FOLDER = WORK_DIR / "results"
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", str(BASE_DIR / "models" / "best.pt")))
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10 MB
+app.config["MAX_CONTENT_LENGTH"] = 4 * 1024 * 1024  # 4 MB
 app.config["JSON_SORT_KEYS"] = False
 
 # -------------------------------
