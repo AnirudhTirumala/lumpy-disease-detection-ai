@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+!.env.example
+**/node_modules
+**/.next
+backend/uploads
+backend/results
+backend/runs
+dataset
+runs
+test_images
+*.cache
+yolo*.pt
+structure.txt

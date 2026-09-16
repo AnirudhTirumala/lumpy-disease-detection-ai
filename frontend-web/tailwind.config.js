@@ -1,0 +1,78 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        accent: {
+          50:  '#F2F0FD',
+          100: '#EEEBFF',
+          200: '#D9D3FB',
+          300: '#B6ABF6',
+          400: '#9385F0',
+          500: '#6953F4',
+          600: '#5440DE',
+          700: '#4432B0',
+          800: '#352887',
+          900: '#241B5C',
+        },
+        canvas:  '#F7F7FB',
+        paper:   '#FFFFFF',
+        ink:     '#14132B',
+        subink:  '#6B7280',
+        hairline:'#ECECF3',
+        navy: {
+          DEFAULT: '#14132B',
+          800: '#1B1A3A',
+          700: '#231F4D',
+          600: '#2E2A63',
+        },
+        ok:    '#16A34A',
+        warn:  '#D97706',
+        bad:   '#DC2626',
+        info:  '#2563EB',
+        brand: {
+          50:  '#ECFEFF',
+          100: '#CFFAFE',
+          300: '#67E8F9',
+          400: '#22D3EE',
+          500: '#00F2FE',
+          600: '#4FACFE',
+          700: '#0EA5C7',
+          800: '#0B7A95',
+          900: '#0A4F62',
+        },
+        surface: '#030712',
+        card:    '#0F172A',
+        border:  '#1E293B',
+      },
+      fontFamily: {
+        display: ['Syne', 'sans-serif'],
+        body:    ['Inter', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'monospace'],
+      },
+      boxShadow: {
+        glass:    '0 4px 32px 0 rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)',
+        glow:     '0 0 24px rgba(0,242,254,0.25)',
+        'glow-sm':'0 0 12px rgba(0,242,254,0.18)',
+        card:     '0 1px 2px rgba(20,19,43,0.04), 0 8px 24px rgba(20,19,43,0.06)',
+        'card-lg':'0 1px 2px rgba(20,19,43,0.04), 0 16px 40px rgba(20,19,43,0.08)',
+        'accent-glow': '0 0 0 1px rgba(105,83,244,0.12), 0 8px 20px rgba(105,83,244,0.18)',
+      },
+      keyframes: {
+        fadeIn:  { from: { opacity: '0' }, to: { opacity: '1' } },
+        slideUp: { from: { opacity: '0', transform: 'translateY(16px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        pulse2:  { '0%,100%': { opacity: '1' }, '50%': { opacity: '.5' } },
+      },
+      animation: {
+        'fade-in':   'fadeIn 0.4s ease forwards',
+        'slide-up':  'slideUp 0.5s ease forwards',
+        'pulse-slow':'pulse2 3s cubic-bezier(0.4,0,0.6,1) infinite',
+      },
+    },
+  },
+  plugins: [],
+};

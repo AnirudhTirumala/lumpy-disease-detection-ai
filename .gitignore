@@ -1,9 +1,26 @@
 __pycache__/
 *.pyc
 .env
+.env.local
+.env.*
+!.env.example
 venv/
 node_modules/
 dist/
 build/
 .expo/
 .next/
+coverage/
+
+# Local scan outputs and training artefacts are not needed to run the app.
+# Keep backend/models/best.pt: it is the production inference model.
+backend/uploads/
+backend/results/
+backend/runs/
+/dataset/
+/runs/
+/test_images/
+/yolo*.pt
+*.cache
+
+*.tsbuildinfo
