@@ -47,7 +47,7 @@ export default function UserManagement() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); const iv = setInterval(load, 8000); return () => clearInterval(iv); }, []);
+  useEffect(() => { load(); const iv = setInterval(load, 15000); return () => clearInterval(iv); }, []);
 
   async function handleAction(doctorId: string, action: 'approve' | 'reject') {
     await fetch('/api/admin/approve', {

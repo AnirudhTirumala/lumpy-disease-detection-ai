@@ -1,13 +1,16 @@
 'use client';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import DashboardShell from '@/components/layout/DashboardShell';
 import AdminOverview from '@/components/dashboard/admin/AdminOverview';
-import UserManagement from '@/components/dashboard/admin/UserManagement';
-import AdminAnalytics from '@/components/dashboard/admin/AdminAnalytics';
-import OutbreakMap from '@/components/dashboard/shared/OutbreakMap';
-import Notifications from '@/components/dashboard/shared/Notifications';
-import ProfileSettings from '@/components/dashboard/shared/ProfileSettings';
-import ScanTool from '@/components/dashboard/shared/ScanTool';
+import PanelLoader from '@/components/dashboard/shared/PanelLoader';
+
+const UserManagement = dynamic(() => import('@/components/dashboard/admin/UserManagement'), { loading: PanelLoader });
+const AdminAnalytics = dynamic(() => import('@/components/dashboard/admin/AdminAnalytics'), { loading: PanelLoader });
+const OutbreakMap = dynamic(() => import('@/components/dashboard/shared/OutbreakMap'), { loading: PanelLoader });
+const Notifications = dynamic(() => import('@/components/dashboard/shared/Notifications'), { loading: PanelLoader });
+const ProfileSettings = dynamic(() => import('@/components/dashboard/shared/ProfileSettings'), { loading: PanelLoader });
+const ScanTool = dynamic(() => import('@/components/dashboard/shared/ScanTool'), { loading: PanelLoader });
 
 const TAB_META: Record<string, { title: string; subtitle: string }> = {
   dashboard:       { title: 'Admin Dashboard',  subtitle: 'Real-time platform overview' },

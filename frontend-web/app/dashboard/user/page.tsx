@@ -1,14 +1,19 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import DashboardShell from '@/components/layout/DashboardShell';
 import FarmerOverview from '@/components/dashboard/user/FarmerOverview';
-import MyCattle from '@/components/dashboard/user/MyCattle';
-import ScanHistory from '@/components/dashboard/user/ScanHistory';
-import DoctorChat from '@/components/dashboard/user/DoctorChat';
-import Reports from '@/components/dashboard/user/Reports';
-import OutbreakMap from '@/components/dashboard/shared/OutbreakMap';
-import Notifications from '@/components/dashboard/shared/Notifications';
-import ProfileSettings from '@/components/dashboard/shared/ProfileSettings';
+import PanelLoader from '@/components/dashboard/shared/PanelLoader';
+
+// Each tab is a complete client screen. Loading it only when selected keeps
+// chat, maps, forms, and their dependencies out of the initial dashboard JS.
+const MyCattle = dynamic(() => import('@/components/dashboard/user/MyCattle'), { loading: PanelLoader });
+const ScanHistory = dynamic(() => import('@/components/dashboard/user/ScanHistory'), { loading: PanelLoader });
+const DoctorChat = dynamic(() => import('@/components/dashboard/user/DoctorChat'), { loading: PanelLoader });
+const Reports = dynamic(() => import('@/components/dashboard/user/Reports'), { loading: PanelLoader });
+const OutbreakMap = dynamic(() => import('@/components/dashboard/shared/OutbreakMap'), { loading: PanelLoader });
+const Notifications = dynamic(() => import('@/components/dashboard/shared/Notifications'), { loading: PanelLoader });
+const ProfileSettings = dynamic(() => import('@/components/dashboard/shared/ProfileSettings'), { loading: PanelLoader });
 
 const TAB_META: Record<string, { title: string; subtitle: string }> = {
   dashboard:       { title: 'My Dashboard',     subtitle: 'Monitor your herd health in real time' },

@@ -6,15 +6,20 @@ if (!MONGODB_URI) throw new Error('Please define MONGODB_URI in .env.local');
 
 declare global { var _mongoClientPromise: Promise<MongoClient> | undefined; }
 
-let clientPromise: Promise<MongoClient>;
-if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    global._mongoClientPromise = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 8000 }).connect();
-  }
-  clientPromise = global._mongoClientPromise;
-} else {
-  clientPromise = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 8000 }).connect();
+// A warm serverless function can handle many requests. Reuse one bounded
+// client pool for its lifetime instead of creating a new pool when this
+// module is evaluated. Keeping the pool small also avoids exhausting Atlas
+// connections when Vercel scales out during bursts of dashboard polling.
+if (!global._mongoClientPromise) {
+  global._mongoClientPromise = new MongoClient(MONGODB_URI, {
+    maxPoolSize: 10,
+    minPoolSize: 0,
+    serverSelectionTimeoutMS: 8_000,
+    waitQueueTimeoutMS: 8_000,
+  }).connect();
 }
+
+const clientPromise = global._mongoClientPromise;
 
 export default clientPromise;
 

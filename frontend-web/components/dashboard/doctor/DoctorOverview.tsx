@@ -3,27 +3,26 @@ import { useState, useEffect } from 'react';
 import { Stethoscope, AlertTriangle, CheckCircle, Clock, MessageSquare, TrendingUp, RefreshCw, ArrowRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { getStoredUser } from '@/lib/auth';
+import { useNotifications } from '@/components/dashboard/shared/NotificationProvider';
 
 export default function DoctorOverview({ onTabChange }: { onTabChange?: (tab: string) => void }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [unread, setUnread] = useState(0);
+  const [chatUnread, setChatUnread] = useState(0);
   const user = getStoredUser();
+  const { unreadCount: notificationUnread } = useNotifications();
 
   function load() {
     Promise.all([
       fetch('/api/dashboard/doctor').then(r => r.json()),
-      user?.id ? fetch(`/api/notifications?userId=${user.id}`).then(r => r.json()) : Promise.resolve({ unreadCount: 0 }),
       user?.id ? fetch(`/api/chat?userId=${user.id}`).then(r => r.json()) : Promise.resolve({ threads: [] }),
-    ]).then(([caseData, notifData, chatData]) => {
+    ]).then(([caseData, chatData]) => {
       setData(caseData);
-      setUnread(notifData.unreadCount || 0);
-      const chatUnread = (chatData.threads || []).reduce((s: number, t: any) => s + (t.unreadCount || 0), 0);
-      setUnread(prev => prev + chatUnread);
+      setChatUnread((chatData.threads || []).reduce((s: number, t: any) => s + (t.unreadCount || 0), 0));
     }).catch(console.error).finally(() => setLoading(false));
   }
 
-  useEffect(() => { load(); const iv = setInterval(load, 8000); return () => clearInterval(iv); }, [user?.id]);
+  useEffect(() => { load(); const iv = setInterval(load, 15000); return () => clearInterval(iv); }, [user?.id]);
 
   if (!data && loading) return (
     <div className="flex items-center justify-center py-32">
@@ -65,7 +64,7 @@ export default function DoctorOverview({ onTabChange }: { onTabChange?: (tab: st
           { label: 'Open Cases', value: stats.open, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200', tab: 'case-queue' },
           { label: 'High Severity', value: stats.high, icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200', tab: 'case-queue' },
           { label: 'Resolved', value: stats.resolved, icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-200', tab: 'case-queue' },
-          { label: 'New Messages', value: unread, icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200', tab: 'farmer-chat' },
+          { label: 'New Messages', value: notificationUnread + chatUnread, icon: MessageSquare, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200', tab: 'farmer-chat' },
         ].map(({ label, value, icon: Icon, color, bg, border, tab }) => (
           <button key={label} onClick={() => onTabChange?.(tab)}
             className={`${bg} border ${border} rounded-2xl p-5 text-left hover:shadow-md transition-all group`}>

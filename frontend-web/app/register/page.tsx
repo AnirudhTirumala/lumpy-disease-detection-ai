@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Loader2, CheckCircle, Upload, X } from 'lucide-react';
 
-type Step = 'form' | 'otp' | 'done';
+type Step = 'form' | 'otp' | 'documents' | 'done';
 type Role = 'user' | 'doctor';
 
 export default function RegisterPage() {
@@ -44,6 +44,17 @@ export default function RegisterPage() {
     setDocFiles(prev => [...prev, ...files].slice(0, 5)); // max 5 docs
   }
 
+  async function uploadDoctorFiles() {
+    const fd = new FormData();
+    fd.append('email', pendingEmail);
+    if (profileImage) fd.append('profileImage', profileImage);
+    docFiles.forEach(file => fd.append('docs', file));
+
+    const response = await fetch('/api/auth/upload-docs', { method: 'POST', body: fd });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Document upload failed.');
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -60,15 +71,6 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-
-      // Upload profile image + docs if doctor
-      if (role === 'doctor' && (profileImage || docFiles.length > 0)) {
-        const fd = new FormData();
-        fd.append('email', email);
-        if (profileImage) fd.append('profileImage', profileImage);
-        docFiles.forEach(f => fd.append('docs', f));
-        await fetch('/api/auth/upload-docs', { method: 'POST', body: fd });
-      }
 
       setPendingEmail(email);
       setStep('otp');
@@ -88,7 +90,7 @@ export default function RegisterPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error); return; }
-      setStep('done');
+      setStep(role === 'doctor' && (profileImage || docFiles.length > 0) ? 'documents' : 'done');
     } catch { setError('Server error. Try again.'); }
     finally { setLoading(false); }
   }
@@ -107,6 +109,19 @@ export default function RegisterPage() {
       setOtp('');
     } catch { setError('Failed to resend. Try again.'); }
     finally { setResendLoading(false); }
+  }
+
+  async function handleDocumentUpload() {
+    setError('');
+    setLoading(true);
+    try {
+      await uploadDoctorFiles();
+      setStep('done');
+    } catch (uploadError: any) {
+      setError(uploadError.message || 'Document upload failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   const BG = (
@@ -170,6 +185,28 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+
+  if (step === 'documents') return (
+    <div className="relative min-h-screen flex items-center justify-center px-4">
+      {BG}
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-8 text-white backdrop-blur-md space-y-4">
+        <div className="flex flex-col items-center text-center">
+          <CheckCircle className="w-12 h-12 text-green-400 mb-3" />
+          <h2 className="text-xl font-bold">Email verified</h2>
+          <p className="text-sm text-white/70 mt-1">Upload your selected verification files for the administrator to review.</p>
+        </div>
+        <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80 space-y-1">
+          {profileImage && <p>Profile photo: {profileImage.name}</p>}
+          {docFiles.map((file) => <p key={`${file.name}-${file.size}`}>{file.name}</p>)}
+        </div>
+        {error && <p className="text-sm text-red-300">{error}</p>}
+        <button onClick={handleDocumentUpload} disabled={loading}
+          className="w-full py-3 bg-white text-gray-900 rounded-xl font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+          {loading && <Loader2 className="w-4 h-4 animate-spin" />} Upload documents
+        </button>
       </div>
     </div>
   );

@@ -2,8 +2,12 @@
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
 
+if (process.env.ALLOW_DEMO_SEED !== 'true') {
+  throw new Error('Refusing to insert demo accounts. Run with ALLOW_DEMO_SEED=true for an intentional local demo seed.');
+}
+
 const URI = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const DB  = 'lumpydb';
+const DB  = process.env.MONGODB_DB_NAME || 'lumpydb';
 
 async function seed() {
   const client = new MongoClient(URI);
@@ -14,12 +18,13 @@ async function seed() {
   // Indexes
   await db.collection('users').createIndex({ email: 1 }, { unique: true });
   await db.collection('users').createIndex({ role: 1, status: 1 });
-  await db.collection('cattle').createIndex({ ownerId: 1 });
+  await db.collection('cattle').createIndex({ ownerId: 1, createdAt: -1 });
   await db.collection('scans').createIndex({ farmerId: 1, createdAt: -1 });
+  await db.collection('cases').createIndex({ createdAt: -1 });
   await db.collection('cases').createIndex({ status: 1, createdAt: -1 });
   await db.collection('messages').createIndex({ threadId: 1, createdAt: 1 });
-  await db.collection('messages').createIndex({ farmerId: 1 });
-  await db.collection('messages').createIndex({ doctorId: 1 });
+  await db.collection('messages').createIndex({ farmerId: 1, createdAt: -1 });
+  await db.collection('messages').createIndex({ doctorId: 1, createdAt: -1 });
   await db.collection('notifications').createIndex({ userId: 1, createdAt: -1 });
   console.log('✅ Indexes created');
 
@@ -38,7 +43,7 @@ async function seed() {
     const { password, ...rest } = u;
     const r = await db.collection('users').insertOne({ ...rest, passwordHash: await bcrypt.hash(password, 12), createdAt: now, updatedAt: now });
     insertedIds[u.role] = r.insertedId.toString();
-    console.log(`✅ Created ${u.email} / ${password}`);
+    console.log(`✅ Created demo ${u.role} account`);
   }
 
   // Seed cattle for farmer
@@ -57,10 +62,7 @@ async function seed() {
   }
 
   await client.close();
-  console.log('\n🎉 Done! Login credentials:');
-  console.log('   farmer@lumpy.ai  / farmer123');
-  console.log('   vet@lumpy.ai     / vet123');
-  console.log('   admin@lumpy.ai   / admin123');
+  console.log('\n🎉 Demo data seeded.');
 }
 
 seed().catch(e => { console.error(e); process.exit(1); });

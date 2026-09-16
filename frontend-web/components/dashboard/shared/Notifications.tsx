@@ -1,13 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
 import { Bell, AlertTriangle, CheckCircle2, MessageSquare, ScanLine, Trash2, RefreshCw } from 'lucide-react';
-import { getStoredUser } from '@/lib/auth';
 import type { SidebarRole } from '@/components/layout/Sidebar';
-
-interface Notif {
-  id: string; title: string; body: string; type: string;
-  read: boolean; link?: string; createdAt: string;
-}
+import { useNotifications } from './NotificationProvider';
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
   scan: <ScanLine className="w-4 h-4 text-accent-600" />,
@@ -18,46 +12,25 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
 };
 
 export default function Notifications({ role }: { role: SidebarRole }) {
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const [loading, setLoading] = useState(true);
-  const user = getStoredUser();
-
-  function load() {
-    if (!user?.id) return;
-    fetch(`/api/notifications?userId=${user.id}`)
-      .then(r => r.json())
-      .then(d => setNotifs(d.notifications || []))
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    load();
-    const iv = setInterval(load, 5000);
-    return () => clearInterval(iv);
-  }, [user?.id]);
+  const {
+    notifications: notifs,
+    loading,
+    refresh,
+    markAllRead,
+    markRead,
+    dismiss: dismissNotification,
+  } = useNotifications();
 
   async function markAll() {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user?.id }),
-    });
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
+    try { await markAllRead(); } catch { /* Keep the current state if the write fails. */ }
   }
 
   async function dismiss(id: string) {
-    await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' });
-    setNotifs(prev => prev.filter(n => n.id !== id));
+    try { await dismissNotification(id); } catch { /* Keep the current state if the write fails. */ }
   }
 
   async function markOne(id: string) {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notifId: id }),
-    });
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try { await markRead(id); } catch { /* Keep the current state if the write fails. */ }
   }
 
   const unread = notifs.filter(n => !n.read).length;
@@ -70,7 +43,7 @@ export default function Notifications({ role }: { role: SidebarRole }) {
           <p className="text-xs text-subink mt-0.5">Only real-time notifications from your activity</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={load} className="flex items-center gap-1.5 text-xs text-subink hover:text-ink px-3 py-1.5 border border-hairline rounded-xl">
+          <button onClick={() => { void refresh(); }} className="flex items-center gap-1.5 text-xs text-subink hover:text-ink px-3 py-1.5 border border-hairline rounded-xl">
             <RefreshCw className="w-3.5 h-3.5" /> Refresh
           </button>
           {unread > 0 && (

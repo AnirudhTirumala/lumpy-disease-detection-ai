@@ -1,29 +1,12 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { Bell, X } from 'lucide-react';
-import { getStoredUser } from '@/lib/auth';
-
-interface Notif {
-  id: string; title: string; body: string; type: string;
-  read: boolean; link?: string; createdAt: string;
-}
+import { useNotifications } from './NotificationProvider';
 
 export default function NotificationBell() {
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
-  const user = getStoredUser();
-
-  function load() {
-    if (!user?.id) return;
-    fetch(`/api/notifications?userId=${user.id}`)
-      .then(r => r.json())
-      .then(d => { setNotifs(d.notifications || []); setUnread(d.unreadCount || 0); })
-      .catch(console.error);
-  }
-
-  useEffect(() => { load(); const iv = setInterval(load, 5000); return () => clearInterval(iv); }, [user?.id]);
+  const { notifications: notifs, unreadCount: unread, markAllRead, markRead } = useNotifications();
 
   // Close on outside click
   useEffect(() => {
@@ -35,23 +18,11 @@ export default function NotificationBell() {
   }, []);
 
   async function markAll() {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user?.id }),
-    });
-    setNotifs(prev => prev.map(n => ({ ...n, read: true })));
-    setUnread(0);
+    try { await markAllRead(); } catch { /* Keep the current state if the write fails. */ }
   }
 
   async function markOne(id: string) {
-    await fetch('/api/notifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notifId: id }),
-    });
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    setUnread(prev => Math.max(0, prev - 1));
+    try { await markRead(id); } catch { /* Keep the current state if the write fails. */ }
   }
 
   const TYPE_EMOJI: Record<string, string> = {

@@ -65,14 +65,14 @@ export default function DoctorChat() {
   }, [user?.id]);
 
   useEffect(() => { loadThreads(); }, []);
-  useEffect(() => { const iv = setInterval(loadThreads, 5000); return () => clearInterval(iv); }, [user?.id]);
+  useEffect(() => { const iv = setInterval(loadThreads, 15000); return () => clearInterval(iv); }, [user?.id]);
 
   useEffect(() => {
     if (!activeThreadId || !user?.id) return;
     const load = () => fetch(`/api/chat?userId=${user.id}&threadId=${activeThreadId}`)
       .then(r => r.json()).then(d => setMessages(d.messages || [])).catch(console.error);
     load();
-    const iv = setInterval(load, 3000);
+    const iv = setInterval(load, 5000);
     return () => clearInterval(iv);
   }, [activeThreadId, user?.id]);
 

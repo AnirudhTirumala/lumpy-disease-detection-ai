@@ -16,41 +16,61 @@ export async function GET() {
       .limit(200)
       .toArray();
 
-    const enriched = await Promise.all(cases.map(async c => {
-      let imageUrl: string | null = null;
-      let farmerLocation: string | null = null;
+    // Fetch related scans and farmers in two batched queries. The previous
+    // implementation performed up to 400 extra queries for a 200-case page,
+    // which is especially expensive from a serverless function and under the
+    // dashboard's refresh cadence.
+    const scanIds = cases
+      .map((caseItem) => caseItem.scanId)
+      .filter((id): id is string => Boolean(id && ObjectId.isValid(id)))
+      .map((id) => new ObjectId(id));
+    const farmerIds = cases
+      .map((caseItem) => caseItem.farmerId)
+      .filter((id): id is string => Boolean(id && ObjectId.isValid(id)))
+      .map((id) => new ObjectId(id));
 
-      if (c.scanId && ObjectId.isValid(c.scanId)) {
-        const scan = await db.collection('scans').findOne({ _id: new ObjectId(c.scanId) });
-        if (scan?.imageFileId) imageUrl = `/api/images/${scan.imageFileId}`;
-      }
+    const [scans, farmers] = await Promise.all([
+      scanIds.length > 0
+        ? db.collection('scans').find(
+            { _id: { $in: scanIds } },
+            { projection: { imageFileId: 1 } },
+          ).toArray()
+        : Promise.resolve([]),
+      farmerIds.length > 0
+        ? db.collection('users').find(
+            { _id: { $in: farmerIds } },
+            { projection: { location: 1 } },
+          ).toArray()
+        : Promise.resolve([]),
+    ]);
+    const scansById = new Map(scans.map((scan) => [scan._id.toString(), scan]));
+    const farmersById = new Map(farmers.map((farmer) => [farmer._id.toString(), farmer]));
 
-      if (c.farmerId && ObjectId.isValid(c.farmerId)) {
-        const farmer = await db.collection('users').findOne({ _id: new ObjectId(c.farmerId) });
-        farmerLocation = farmer?.location || null;
-      }
+    const enriched = cases.map((caseItem) => {
+      const scan = caseItem.scanId ? scansById.get(caseItem.scanId) : undefined;
+      const farmer = farmersById.get(caseItem.farmerId);
 
       return {
-        id: c._id!.toString(),
-        scanId: c.scanId,
-        farmer: c.farmerName,
-        farmerId: c.farmerId,
-        farmerLocation,
-        cattle: c.cattleName,
-        animalType: c.animalType,
-        submitted: c.createdAt.toISOString(),
-        confidence: c.confidence,
-        severity: c.severity,
-        status: c.status,
-        result: c.confidence >= 50 ? (
-          c.severity === 'Low' && c.confidence < 60 ? 'healthy' : 'lumpy'
+        id: caseItem._id!.toString(),
+        scanId: caseItem.scanId,
+        farmer: caseItem.farmerName,
+        farmerId: caseItem.farmerId,
+        farmerLocation: farmer?.location || null,
+        cattle: caseItem.cattleName,
+        animalType: caseItem.animalType,
+        submitted: caseItem.createdAt.toISOString(),
+        confidence: caseItem.confidence,
+        severity: caseItem.severity,
+        status: caseItem.status,
+        result: caseItem.confidence >= 50 ? (
+          caseItem.severity === 'Low' && caseItem.confidence < 60 ? 'healthy' : 'lumpy'
         ) : 'healthy',
-        doctorNotes: c.doctorNotes,
-        flagged: (c as any).flagged || false,
-        treatmentNotes: (c as any).treatmentNotes || '',
-        imageUrl,
+        doctorNotes: caseItem.doctorNotes,
+        flagged: (caseItem as any).flagged || false,
+        treatmentNotes: (caseItem as any).treatmentNotes || '',
+        imageUrl: scan?.imageFileId ? `/api/images/${scan.imageFileId}` : null,
       };
-    }));
+    });
 
     const open     = cases.filter(c => c.status === 'Pending').length;
     const underRev = cases.filter(c => c.status === 'Under Review').length;

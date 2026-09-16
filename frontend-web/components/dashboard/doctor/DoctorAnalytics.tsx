@@ -57,7 +57,7 @@ export default function DoctorAnalytics() {
 
   useEffect(() => {
     load();
-    const iv = setInterval(load, 5000); // poll every 5s
+    const iv = setInterval(load, 15000);
     return () => clearInterval(iv);
   }, []);
 

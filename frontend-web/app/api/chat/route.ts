@@ -97,11 +97,22 @@ export async function GET(request: Request) {
     { $sort: { lastMessageTime: -1 } },
   ]).toArray();
 
-  const enriched = await Promise.all(threads.map(async (t) => {
+  // Resolve the other participant for every thread in one query. Per-thread
+  // lookups turn the badge/chat polling path into an N+1 database workload.
+  const otherIds = threads
+    .map((thread) => thread.farmerId === userId ? thread.doctorId : thread.farmerId)
+    .filter((id): id is string => Boolean(id && ObjectId.isValid(id)));
+  const otherUsers = otherIds.length > 0
+    ? await db.collection('users').find(
+        { _id: { $in: otherIds.map((id) => new ObjectId(id)) } },
+        { projection: { name: 1, profileImageFileId: 1, role: 1, availabilityStatus: 1 } },
+      ).toArray()
+    : [];
+  const usersById = new Map(otherUsers.map((other) => [other._id.toString(), other]));
+
+  const enriched = threads.map((t) => {
     const otherId = t.farmerId === userId ? t.doctorId : t.farmerId;
-    const other = ObjectId.isValid(otherId)
-      ? await db.collection('users').findOne({ _id: new ObjectId(otherId) }, { projection: { name: 1, profileImageFileId: 1, role: 1, availabilityStatus: 1 } })
-      : null;
+    const other = usersById.get(otherId);
     return {
       threadId: t._id,
       otherId,
@@ -113,7 +124,7 @@ export async function GET(request: Request) {
       lastMessageTime: t.lastMessageTime,
       unreadCount: t.unreadCount,
     };
-  }));
+  });
 
   return NextResponse.json({ threads: enriched });
 }

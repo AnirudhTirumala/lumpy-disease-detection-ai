@@ -75,7 +75,7 @@ def health():
 
 @app.errorhandler(RequestEntityTooLarge)
 def file_too_large(_error):
-    return jsonify({"error": "Image must be 10MB or smaller."}), 413
+    return jsonify({"error": "Image must be 4MB or smaller."}), 413
 
 
 # -------------------------------

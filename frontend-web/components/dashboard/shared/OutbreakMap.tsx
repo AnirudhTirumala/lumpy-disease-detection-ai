@@ -26,28 +26,23 @@ export default function OutbreakMap() {
     setLoading(true);
     try {
       // Get all lumpy scans with farmer location
-      const res = await fetch('/api/scans?all=1');
+      const res = await fetch('/api/scans?all=1&includeFarmer=1');
       const data = await res.json();
       const lumpyScans = (data.scans || []).filter((s: any) => s.result === 'lumpy');
 
-      // Get farmer locations
-      const userRes = await fetch('/api/users?role=user&status=active');
-      const userData = await userRes.json();
-      const userMap = new Map((userData.users || []).map((u: any) => [u.id, u]));
-
-      // Convert to map points — geocode location string to approximate lat/lng
+      // The scans route returns only the authorised farmers needed for these
+      // scans, avoiding an admin-only full-user-list request.
       const pts: OutbreakPoint[] = [];
       for (const scan of lumpyScans) {
-        const farmer = userMap.get(scan.farmerId) as any;
-        if (!farmer?.location) continue;
+        if (!scan.farmerLocation) continue;
         // Approximate lat/lng from India districts (real geocoding needs Google Maps API)
-        const coords = approximateCoords(farmer.location);
+        const coords = approximateCoords(scan.farmerLocation);
         if (!coords) continue;
         pts.push({
           lat: coords.lat + (Math.random() - 0.5) * 0.05, // slight jitter so overlapping pins spread
           lng: coords.lng + (Math.random() - 0.5) * 0.05,
-          farmerName: farmer.name,
-          location: farmer.location,
+          farmerName: scan.farmerName || 'Unknown Farmer',
+          location: scan.farmerLocation,
           cattleName: scan.cattleName,
           animalType: scan.animalType,
           confidence: scan.confidence,

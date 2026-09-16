@@ -18,19 +18,7 @@ export default function PatientRecords() {
   useEffect(() => {
     fetch('/api/scans?all=1')
       .then(r => r.json())
-      .then(async d => {
-        const rows = d.scans || [];
-        // Enrich with farmer names
-        const enriched = await Promise.all(rows.map(async (s: any) => {
-          try {
-            const res = await fetch(`/api/users?role=user`);
-            const data = await res.json();
-            const farmer = (data.users || []).find((u: any) => u.id === s.farmerId);
-            return { ...s, farmerName: farmer?.name || 'Unknown Farmer' };
-          } catch { return { ...s, farmerName: 'Unknown Farmer' }; }
-        }));
-        setScans(enriched);
-      })
+      .then(d => setScans(d.scans || []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);

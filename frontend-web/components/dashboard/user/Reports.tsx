@@ -27,7 +27,7 @@ export default function Reports() {
         .finally(() => setLoading(false));
     }
     load();
-    const iv = setInterval(load, 5000);
+    const iv = setInterval(load, 15000);
     return () => clearInterval(iv);
   }, [user?.id]);
 
@@ -39,7 +39,7 @@ export default function Reports() {
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-accent-600" />
         <h2 className="text-sm font-bold text-ink">My Reports ({scans.length} total)</h2>
-        <span className="text-xs text-subink ml-2">· Auto-updates every 5s</span>
+        <span className="text-xs text-subink ml-2">· Auto-updates every 15s</span>
       </div>
 
       {/* Reviewed by doctor */}

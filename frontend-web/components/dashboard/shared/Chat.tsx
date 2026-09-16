@@ -57,7 +57,7 @@ export default function Chat({ role }: ChatProps) {
         .catch(console.error);
     };
     load();
-    const iv = setInterval(load, 3000);
+    const iv = setInterval(load, 5000);
     return () => clearInterval(iv);
   }, [activeThread?.threadId, user?.id]);
 

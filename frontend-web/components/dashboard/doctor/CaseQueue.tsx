@@ -50,7 +50,7 @@ export default function CaseQueue() {
 
   useEffect(() => {
     load();
-    const iv = setInterval(load, 5000);
+    const iv = setInterval(load, 15000);
     return () => clearInterval(iv);
   }, []);
 

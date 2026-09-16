@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getStoredUser } from '@/lib/auth';
 import LumpyAILogo from '@/components/shared/LumpyAILogo';
+import { useNotifications } from '@/components/dashboard/shared/NotificationProvider';
 
 export type SidebarRole = Role;
 interface MenuItem { id: string; name: string; icon: React.ReactNode; badge?: number; }
@@ -54,30 +55,45 @@ interface SidebarProps { role: SidebarRole; userName: string; currentTab: string
 
 export default function Sidebar({ role, userName, currentTab, onTabChange }: SidebarProps) {
   const router = useRouter();
-  const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [unreadChat, setUnreadChat] = useState(0);
   const [pendingCases, setPendingCases] = useState(0);
   const user = getStoredUser();
+  const { unreadCount: unreadNotifs } = useNotifications();
 
   useEffect(() => {
     if (!user?.id) return;
-    function loadCounts() {
-      // Note: these endpoints now identify the user from the session cookie,
-      // not from this query string — the userId here is harmless leftover
-      // and safely ignored server-side.
-      fetch(`/api/notifications?userId=${user!.id}`).then(r => r.json()).then(d => setUnreadNotifs(d.unreadCount || 0)).catch(() => {});
-      fetch(`/api/chat?userId=${user!.id}`).then(r => r.json()).then(d => {
-        const total = (d.threads || []).reduce((s: number, t: any) => s + (t.unreadCount || 0), 0);
-        setUnreadChat(total);
-      }).catch(() => {});
-      if (role === 'doctor') {
-        fetch('/api/dashboard/doctor').then(r => r.json()).then(d => setPendingCases(d.stats?.open || 0)).catch(() => {});
+    let loading = false;
+    const onChatTab = currentTab === 'doctor-chat' || currentTab === 'farmer-chat';
+    const pageAlreadyLoadsCases = ['dashboard', 'case-queue', 'analytics'].includes(currentTab);
+
+    async function loadCounts() {
+      if (loading) return;
+      loading = true;
+      try {
+        const requests: Promise<Response>[] = [];
+        if (!onChatTab) requests.push(fetch('/api/chat'));
+        if (role === 'doctor' && !pageAlreadyLoadsCases) requests.push(fetch('/api/dashboard/doctor'));
+        const responses = await Promise.all(requests);
+        let responseIndex = 0;
+
+        if (!onChatTab) {
+          const data = await responses[responseIndex++].json();
+          setUnreadChat((data.threads || []).reduce((sum: number, thread: any) => sum + (thread.unreadCount || 0), 0));
+        }
+        if (role === 'doctor' && !pageAlreadyLoadsCases) {
+          const data = await responses[responseIndex].json();
+          setPendingCases(data.stats?.open || 0);
+        }
+      } catch {
+        // Keep the last successful badges visible during a transient outage.
+      } finally {
+        loading = false;
       }
     }
     loadCounts();
-    const iv = setInterval(loadCounts, 5000);
+    const iv = setInterval(loadCounts, 15000);
     return () => clearInterval(iv);
-  }, [user?.id, role]);
+  }, [user?.id, role, currentTab]);
 
   // signOut() is now async — it clears the real server-side session cookie
   // (via /api/auth/logout) before clearing the local UI copy. We await it so

@@ -1,15 +1,18 @@
 'use client';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import DashboardShell from '@/components/layout/DashboardShell';
 import DoctorOverview from '@/components/dashboard/doctor/DoctorOverview';
-import CaseQueue from '@/components/dashboard/doctor/CaseQueue';
-import PatientRecords from '@/components/dashboard/doctor/PatientRecords';
-import FarmerChat from '@/components/dashboard/doctor/FarmerChat';
-import DoctorAnalytics from '@/components/dashboard/doctor/DoctorAnalytics';
-import OutbreakMap from '@/components/dashboard/shared/OutbreakMap';
-import Notifications from '@/components/dashboard/shared/Notifications';
-import ProfileSettings from '@/components/dashboard/shared/ProfileSettings';
-import ScanTool from '@/components/dashboard/shared/ScanTool';
+import PanelLoader from '@/components/dashboard/shared/PanelLoader';
+
+const CaseQueue = dynamic(() => import('@/components/dashboard/doctor/CaseQueue'), { loading: PanelLoader });
+const PatientRecords = dynamic(() => import('@/components/dashboard/doctor/PatientRecords'), { loading: PanelLoader });
+const FarmerChat = dynamic(() => import('@/components/dashboard/doctor/FarmerChat'), { loading: PanelLoader });
+const DoctorAnalytics = dynamic(() => import('@/components/dashboard/doctor/DoctorAnalytics'), { loading: PanelLoader });
+const OutbreakMap = dynamic(() => import('@/components/dashboard/shared/OutbreakMap'), { loading: PanelLoader });
+const Notifications = dynamic(() => import('@/components/dashboard/shared/Notifications'), { loading: PanelLoader });
+const ProfileSettings = dynamic(() => import('@/components/dashboard/shared/ProfileSettings'), { loading: PanelLoader });
+const ScanTool = dynamic(() => import('@/components/dashboard/shared/ScanTool'), { loading: PanelLoader });
 
 const TAB_META: Record<string, { title: string; subtitle: string }> = {
   dashboard:      { title: 'Veterinarian Dashboard', subtitle: 'Your practice at a glance' },
